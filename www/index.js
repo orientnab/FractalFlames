@@ -1,7 +1,7 @@
 import { Picture, Point } from "fractal-flames";
 import { memory } from "fractal-flames/fractal_flames_bg";
 
-const CELL_SIZE = 3;
+const CELL_SIZE = 1;
 
 const picture = Picture.new();
 const width = picture.width();
@@ -34,6 +34,8 @@ const drawCells = () => {
   // const cell_color = new Uint8Array(memory.buffer, cell_color_ptr, 3 * width * height);
   const cell_alpha_ptr = picture.cell_alpha();
   const cell_alpha = new Float32Array(memory.buffer, cell_alpha_ptr, width * height);
+  const cell_color_ptr = picture.cell_color();
+  const cell_color = new Float32Array(memory.buffer, cell_color_ptr, 3 * width * height);
 
   ctx.beginPath();
 
@@ -52,8 +54,14 @@ const drawCells = () => {
       //
 
       // console.log(cell_alpha[idx]);
+      // console.log("(", cell_color[3*idx],", ",
+      //   cell_color[3*idx+1], ", ", cell_color[3*idx+2], ")");
 
-      ctx.fillStyle = "#" + getColor(cell_alpha[idx]).repeat(3);
+      // ctx.fillStyle = "#" + getColor(cell_alpha[idx]).repeat(3);
+      ctx.fillStyle = `rgb(
+        ${Math.floor(255 * cell_color[3*idx])},
+        ${Math.floor(255 * cell_color[3*idx + 1])},
+        ${Math.floor(255 * cell_color[3*idx + 2])}`;
       ctx.fillRect(
         col * (CELL_SIZE) + 1,
         row * (CELL_SIZE) + 1,

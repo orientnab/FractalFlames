@@ -6,6 +6,10 @@ use std::ops::{Add, AddAssign, Mul};
 pub struct Point(pub f32, pub f32);
 
 impl Point {
+    pub fn new() -> Point {
+        Point(0.0, 0.0)
+    }
+
     pub fn affine(&self, coeffs: (f32, f32, f32, f32, f32, f32)) -> Point {
         let Point(x, y) = self;
         let (a, b, c, d, e, f) = coeffs;
