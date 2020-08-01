@@ -1,7 +1,5 @@
 use std::ops::{Add, AddAssign, Mul};
-// use wasm_bindgen::prelude::*;
 
-// #[wasm_bindgen]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Point(pub f32, pub f32);
 
@@ -14,6 +12,14 @@ impl Point {
         let Point(x, y) = self;
         let (a, b, c, d, e, f) = coeffs;
         Point(a * x + b * y + c, d * x + e * y + f)
+    }
+
+    pub fn apply_variation(p: Point, weights: &Vec<f32>, vars: &Vec<fn(Point) -> Point>) -> Point {
+        let mut res = Point::new();
+        for i in 0..vars.len() {
+            res += weights[i] * vars[i](p);
+        }
+        return res;
     }
 }
 

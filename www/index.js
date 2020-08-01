@@ -1,4 +1,4 @@
-import { Picture, Point } from "fractal-flames";
+import { Picture } from "fractal-flames";
 import { memory } from "fractal-flames/fractal_flames_bg";
 
 const CELL_SIZE = 1;

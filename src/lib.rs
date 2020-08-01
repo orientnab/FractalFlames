@@ -1,4 +1,4 @@
-pub mod point;
+mod point;
 mod utils;
 mod variations;
 
@@ -23,7 +23,8 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 const PIC_WIDTH: u32 = 512;
 const PIC_HEIGHT: u32 = 512;
-const ITER: usize = 5_000_000;
+const ITER: usize = 500_000;
+const NUM_FUNCTIONS: usize = 4;
 
 #[wasm_bindgen]
 pub struct Picture {
@@ -52,31 +53,6 @@ impl Picture {
             ))
         }
     }
-}
-
-pub fn weigths(num_variations: usize) -> Vec<f32> {
-    let mut weights: Vec<f32> = vec![1.0 / num_variations as f32; num_variations];
-    for i in 0..num_variations {
-        weights[i] = 2.0 / num_variations as f32 * js_sys::Math::random() as f32;
-        // weights[i] = js_sys::Math::random() as f32;
-    }
-    // weights[0] = js_sys::Math::random() as f32;
-    // for i in 1..num_variations {
-    //     weights[i] = weights[i - 1] + js_sys::Math::random() as f32;
-    // }
-    // for i in 0..num_variations {
-    //     weights[i] /= weights[num_variations - 1];
-    // }
-    weights
-}
-
-pub fn apply_variation(p: Point, weights: &Vec<f32>, vars: &Vec<fn(Point) -> Point>) -> Point {
-    // let mut res = p.clone();
-    let mut res = Point::new();
-    for i in 0..vars.len() {
-        res += weights[i] * vars[i](p);
-    }
-    return res;
 }
 
 #[wasm_bindgen]
@@ -120,139 +96,48 @@ impl Picture {
 
     pub fn paint(&mut self) {
         let vars: Vec<fn(Point) -> Point> = vec![
-            // v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v16, v27, v28, v29, v42,
             v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v16, v27, v28, v29, v42,
         ];
-        let coeffs_pre1 = (
+        let coeffs_pre = create_coeffs(NUM_FUNCTIONS);
+        let coeffs_post = create_coeffs(NUM_FUNCTIONS);
+        let weights = weigths(NUM_FUNCTIONS, vars.len());
+        let colors = create_colors(NUM_FUNCTIONS);
+        let mut coord = Point(
             js_sys::Math::random() as f32 * 2.0 - 1.0,
             js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
         );
-        let coeffs_pre2 = (
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-        );
-        let coeffs_pre3 = (
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-        );
-        let coeffs_pre4 = (
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-        );
-        let coeffs_post1 = (
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-        );
-        let coeffs_post2 = (
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-        );
-        let coeffs_post3 = (
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-        );
-        let coeffs_post4 = (
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 2.0 - 1.0,
-            js_sys::Math::random() as f32 * 0.2 - 0.1,
-        );
-        // let coeffs_pre = (1.3, 0.3, 0.1, -0.8, 0.4, 0.4);
-        // let coeffs_post = (1.3, 0.3, 0.1, -0.8, 0.4, 0.4);
-        let weights1 = weigths(vars.len());
-        let weights2 = weigths(vars.len());
-        let weights3 = weigths(vars.len());
-        let weights4 = weigths(vars.len());
-        let col1 = (
-            js_sys::Math::random() as f32,
-            js_sys::Math::random() as f32,
-            js_sys::Math::random() as f32,
-        );
-        let col2 = (
-            js_sys::Math::random() as f32,
-            js_sys::Math::random() as f32,
-            js_sys::Math::random() as f32,
-        );
-        let col3 = (
-            js_sys::Math::random() as f32,
-            js_sys::Math::random() as f32,
-            js_sys::Math::random() as f32,
-        );
-        let col4 = (
-            js_sys::Math::random() as f32,
-            js_sys::Math::random() as f32,
-            js_sys::Math::random() as f32,
-        );
-        let colors = [col1, col2, col3, col4];
-        let x = js_sys::Math::random() as f32 * 2.0 - 1.0;
-        let y = js_sys::Math::random() as f32 * 2.0 - 1.0;
-        let mut coord = Point(x, y);
-        let mut col;
+        let mut col = colors[0];
         for _ in 0..20 {
-            let val = js_sys::Math::random();
-            if val < 0.25 {
-                coord = apply_variation(coord.affine(coeffs_pre1), &weights1, &vars)
-                    .affine(coeffs_post1);
-            } else if val < 0.5 {
-                coord = apply_variation(coord.affine(coeffs_pre2), &weights2, &vars)
-                    .affine(coeffs_post2);
-            } else if val < 0.75 {
-                coord = apply_variation(coord.affine(coeffs_pre3), &weights3, &vars)
-                    .affine(coeffs_post3);
-            } else {
-                coord = apply_variation(coord.affine(coeffs_pre4), &weights4, &vars)
-                    .affine(coeffs_post4);
-            };
+            let val = js_sys::Math::random() as f32;
+            let threshold = prob_dist(NUM_FUNCTIONS);
+            for idx_threshold in 0..NUM_FUNCTIONS {
+                if val < threshold[idx_threshold] {
+                    coord = Point::apply_variation(
+                        coord.affine(coeffs_pre[idx_threshold]),
+                        &weights[idx_threshold],
+                        &vars,
+                    )
+                    .affine(coeffs_post[idx_threshold]);
+                    break;
+                }
+            }
         }
         for _ in 0..ITER {
-            let val = js_sys::Math::random();
-            if val < 0.25 {
-                coord = apply_variation(coord.affine(coeffs_pre1), &weights1, &vars)
-                    .affine(coeffs_post1);
-                col = colors[0];
-            } else if val < 0.5 {
-                coord = apply_variation(coord.affine(coeffs_pre2), &weights2, &vars)
-                    .affine(coeffs_post2);
-                col = colors[1];
-            } else if val < 0.75 {
-                coord = apply_variation(coord.affine(coeffs_pre3), &weights3, &vars)
-                    .affine(coeffs_post3);
-                col = colors[2];
-            } else {
-                coord = apply_variation(coord.affine(coeffs_pre4), &weights4, &vars)
-                    .affine(coeffs_post4);
-                col = colors[3];
-            };
+            let val = js_sys::Math::random() as f32;
+            let threshold = prob_dist(NUM_FUNCTIONS);
+            for idx_threshold in 0..NUM_FUNCTIONS {
+                if val < threshold[idx_threshold] {
+                    coord = Point::apply_variation(
+                        coord.affine(coeffs_pre[idx_threshold]),
+                        &weights[idx_threshold],
+                        &vars,
+                    )
+                    .affine(coeffs_post[idx_threshold]);
+                    col = colors[idx_threshold];
+                    break;
+                }
+            }
+
             let idx_opt = self.get_index_from_coord(&coord);
             match idx_opt {
                 Some(idx) => {
@@ -263,13 +148,10 @@ impl Picture {
                 }
                 None => (),
             }
-            // log!("{:?}", coord);
         }
         let max_counter = self.cell_counter.iter().cloned().fold(0, u32::max);
         let log_max_counter = js_sys::Math::log(max_counter as f64);
-        // for i in 0..(self.width as usize * self.height as usize) {
         for i in 0..(self.width * self.height) as usize {
-            // log!("{}: {}", i, self.cell_counter[i]);
             self.cell_alpha[i] =
                 (js_sys::Math::log(self.cell_counter[i] as f64) / log_max_counter) as f32;
             self.cell_color[i].0 =
@@ -279,10 +161,70 @@ impl Picture {
             self.cell_color[i].2 =
                 (js_sys::Math::log(self.cell_color[i].2 as f64) / log_max_counter) as f32;
             // Gamma correction
-            self.cell_color[i].0 = (js_sys::Math::pow(self.cell_color[i].0 as f64, 1.0 / 2.2)) as f32;
-            self.cell_color[i].1 = (js_sys::Math::pow(self.cell_color[i].1 as f64, 1.0 / 2.2)) as f32;
-            self.cell_color[i].2 = (js_sys::Math::pow(self.cell_color[i].2 as f64, 1.0 / 2.2)) as f32;
+            self.cell_color[i].0 =
+                (js_sys::Math::pow(self.cell_color[i].0 as f64, 1.0 / 2.2)) as f32;
+            self.cell_color[i].1 =
+                (js_sys::Math::pow(self.cell_color[i].1 as f64, 1.0 / 2.2)) as f32;
+            self.cell_color[i].2 =
+                (js_sys::Math::pow(self.cell_color[i].2 as f64, 1.0 / 2.2)) as f32;
+        }
 
+        // Auxiliary functions
+
+        fn create_coeffs(num_functions: usize) -> Vec<(f32, f32, f32, f32, f32, f32)> {
+            (0..num_functions)
+                .map(|_| {
+                    (
+                        js_sys::Math::random() as f32 * 2.0 - 1.0,
+                        js_sys::Math::random() as f32 * 2.0 - 1.0,
+                        js_sys::Math::random() as f32 * 0.2 - 0.1,
+                        js_sys::Math::random() as f32 * 2.0 - 1.0,
+                        js_sys::Math::random() as f32 * 2.0 - 1.0,
+                        js_sys::Math::random() as f32 * 0.2 - 0.1,
+                    )
+                })
+                .collect::<Vec<(f32, f32, f32, f32, f32, f32)>>()
+        }
+
+        fn create_colors(num_functions: usize) -> Vec<(f32, f32, f32)> {
+            (0..num_functions)
+                .map(|_| {
+                    (
+                        js_sys::Math::random() as f32,
+                        js_sys::Math::random() as f32,
+                        js_sys::Math::random() as f32,
+                    )
+                })
+                .collect::<Vec<(f32, f32, f32)>>()
+        }
+
+        fn prob_dist(num_functions: usize) -> Vec<f32> {
+            let mut weights: Vec<f32> = vec![0.0; num_functions];
+            weights[0] = js_sys::Math::random() as f32;
+            for i in 1..num_functions {
+                weights[i] = weights[i - 1] + js_sys::Math::random() as f32;
+            }
+            for i in 0..num_functions {
+                weights[i] /= weights[num_functions - 1];
+            }
+            weights
+        }
+
+        fn weigths(num_functions: usize, num_variations: usize) -> Vec<Vec<f32>> {
+            (0..num_functions)
+                .map(|_| {
+                    let mut weights: Vec<f32> = vec![1.0 / num_variations as f32; num_variations];
+                    for i in 0..num_variations {
+                        // weights[i] = 2.0 / num_variations as f32 * js_sys::Math::random() as f32;
+                        weights[i] = js_sys::Math::random() as f32;
+                    }
+                    let weights_sum: f32 = weights.iter().cloned().sum();
+                    for i in 0..num_variations {
+                        weights[i] /= weights_sum;
+                    }
+                    weights
+                })
+                .collect::<Vec<Vec<f32>>>()
         }
     }
 }
