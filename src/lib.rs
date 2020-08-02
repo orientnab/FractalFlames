@@ -7,13 +7,13 @@ use variations::*;
 
 use js_sys;
 use wasm_bindgen::prelude::*;
-// use web_sys;
+use web_sys;
 
-// macro_rules! log {
-//     ( $( $t:tt )* ) => {
-//         web_sys::console::log_1(&format!( $( $t )* ).into());
-//     }
-// }
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -23,8 +23,8 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 const PIC_WIDTH: u32 = 512;
 const PIC_HEIGHT: u32 = 512;
-const ITER: usize = 1_000_000;
-const NUM_FUNCTIONS: usize = 4;
+const ITER: usize = 10_000_000;
+const NUM_FUNCTIONS: usize = 6;
 const GAMMA: f64 = 2.2;
 
 #[wasm_bindgen]
@@ -96,17 +96,44 @@ impl Picture {
     }
 
     pub fn paint(&mut self) {
-        // let vars: Vec<fn(Point) -> Point> = vec![
-        let vars: Vec<fn(PreProc) -> Point> = vec![
-            v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17,
-            /* v18, */ v19, /*v20,*/ v21, v22, v23, v24, v25, v27, v28, v29, v39, v42,
+        // let vars: Vec<fn(&PreProc) -> Point> = vec![
+        //     v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17,
+        //     /* v18, */ v19, /*v20,*/ v21, v22, v23, v24, v25, v27, v28, v29, v39, v42,
+        // ];
+        let vars: Vec<fn(&PreProc) -> Point> = vec![
+            v1, v2, v3, v4, v5, v6, v8, v9, v10, v11, v12, v13, v14, v15, v16,
+            v19, v23, v24, v27, v28, v29, v39, v42,
         ];
         let coeffs_pre = create_coeffs(NUM_FUNCTIONS);
         let coeffs_post = create_coeffs(NUM_FUNCTIONS);
-        let params = Params::new();
+        let params = Params::new(NUM_FUNCTIONS);
         let weights = weigths(NUM_FUNCTIONS, vars.len());
         let colors = create_colors(NUM_FUNCTIONS);
         let threshold = prob_dist(NUM_FUNCTIONS);
+
+        let coeffs_pre_final = create_coeffs(1);
+        let coeffs_post_final = create_coeffs(1);
+        log!(
+            "Pre: ({},{},{},{},{},{})",
+            coeffs_pre_final[0].0,
+            coeffs_pre_final[0].1,
+            coeffs_pre_final[0].2,
+            coeffs_pre_final[0].3,
+            coeffs_pre_final[0].4,
+            coeffs_pre_final[0].5,
+        );
+        log!(
+            "Post: ({},{},{},{},{},{})",
+            coeffs_post_final[0].0,
+            coeffs_post_final[0].1,
+            coeffs_post_final[0].2,
+            coeffs_post_final[0].3,
+            coeffs_post_final[0].4,
+            coeffs_post_final[0].5,
+        );
+        let params_final = Params::new(1);
+        let weights_final = weigths(1, vars.len());
+
         let mut coord = Point(
             js_sys::Math::random() as f32 * 2.0 - 1.0,
             js_sys::Math::random() as f32 * 2.0 - 1.0,
@@ -119,9 +146,9 @@ impl Picture {
                     let pre_proc = pre_proc(
                         coord.affine(coeffs_pre[idx_threshold]),
                         coeffs_pre[idx_threshold],
-                        params,
+                        &params[idx_threshold],
                     );
-                    coord = Point::apply_variation(pre_proc, &weights[idx_threshold], &vars)
+                    coord = Point::apply_variation(&pre_proc, &weights[idx_threshold], &vars)
                         .affine(coeffs_post[idx_threshold]);
                     break;
                 }
@@ -134,14 +161,22 @@ impl Picture {
                     let pre_proc = pre_proc(
                         coord.affine(coeffs_pre[idx_threshold]),
                         coeffs_pre[idx_threshold],
-                        params,
+                        &params[idx_threshold],
                     );
-                    coord = Point::apply_variation(pre_proc, &weights[idx_threshold], &vars)
+                    coord = Point::apply_variation(&pre_proc, &weights[idx_threshold], &vars)
                         .affine(coeffs_post[idx_threshold]);
                     col = colors[idx_threshold];
                     break;
                 }
             }
+
+            let pre_proc = pre_proc(
+                coord.affine(coeffs_pre_final[0]),
+                coeffs_pre_final[0],
+                &params_final[0],
+            );
+            coord = Point::apply_variation(&pre_proc, &weights_final[0], &vars)
+                .affine(coeffs_post_final[0]);
 
             let idx_opt = self.get_index_from_coord(&coord);
             match idx_opt {
@@ -154,6 +189,7 @@ impl Picture {
                 None => (),
             }
         }
+
         let max_counter = self.cell_counter.iter().cloned().fold(0, u32::max);
         let log_max_counter = js_sys::Math::log(max_counter as f64);
         for i in 0..(self.width * self.height) as usize {
@@ -195,7 +231,8 @@ impl Picture {
             (0..num_functions)
                 .map(|_| {
                     (
-                        js_sys::Math::random() as f32,
+                        // js_sys::Math::random() as f32,
+                        1.0,
                         js_sys::Math::random() as f32,
                         js_sys::Math::random() as f32,
                     )
