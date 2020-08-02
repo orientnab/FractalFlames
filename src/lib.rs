@@ -23,8 +23,9 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 const PIC_WIDTH: u32 = 512;
 const PIC_HEIGHT: u32 = 512;
-const ITER: usize = 500_000;
+const ITER: usize = 1_000_000;
 const NUM_FUNCTIONS: usize = 4;
+const GAMMA: f64 = 2.2;
 
 #[wasm_bindgen]
 pub struct Picture {
@@ -45,8 +46,8 @@ impl Picture {
         if x.abs() >= 1.0 || y.abs() >= 1.0 {
             None
         } else {
-            let a = js_sys::Math::floor(((x + 1.0) / 2.0 * self.width as f32) as f64) as u32;
-            let b = js_sys::Math::floor(((y + 1.0) / 2.0 * self.height as f32) as f64) as u32;
+            let a = ((x + 1.0) / 2.0 * self.width as f32).floor() as u32;
+            let b = ((y + 1.0) / 2.0 * self.height as f32).floor() as u32;
             Some(self.get_index(
                 std::cmp::min(a, self.width - 1),
                 std::cmp::min(b, self.height - 1),
@@ -95,13 +96,17 @@ impl Picture {
     }
 
     pub fn paint(&mut self) {
-        let vars: Vec<fn(Point) -> Point> = vec![
-            v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v16, v27, v28, v29, v42,
+        // let vars: Vec<fn(Point) -> Point> = vec![
+        let vars: Vec<fn(PreProc) -> Point> = vec![
+            v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17,
+            /* v18, */ v19, /*v20,*/ v21, v22, v23, v24, v25, v27, v28, v29, v39, v42,
         ];
         let coeffs_pre = create_coeffs(NUM_FUNCTIONS);
         let coeffs_post = create_coeffs(NUM_FUNCTIONS);
+        let params = Params::new();
         let weights = weigths(NUM_FUNCTIONS, vars.len());
         let colors = create_colors(NUM_FUNCTIONS);
+        let threshold = prob_dist(NUM_FUNCTIONS);
         let mut coord = Point(
             js_sys::Math::random() as f32 * 2.0 - 1.0,
             js_sys::Math::random() as f32 * 2.0 - 1.0,
@@ -109,30 +114,30 @@ impl Picture {
         let mut col = colors[0];
         for _ in 0..20 {
             let val = js_sys::Math::random() as f32;
-            let threshold = prob_dist(NUM_FUNCTIONS);
             for idx_threshold in 0..NUM_FUNCTIONS {
                 if val < threshold[idx_threshold] {
-                    coord = Point::apply_variation(
+                    let pre_proc = pre_proc(
                         coord.affine(coeffs_pre[idx_threshold]),
-                        &weights[idx_threshold],
-                        &vars,
-                    )
-                    .affine(coeffs_post[idx_threshold]);
+                        coeffs_pre[idx_threshold],
+                        params,
+                    );
+                    coord = Point::apply_variation(pre_proc, &weights[idx_threshold], &vars)
+                        .affine(coeffs_post[idx_threshold]);
                     break;
                 }
             }
         }
         for _ in 0..ITER {
             let val = js_sys::Math::random() as f32;
-            let threshold = prob_dist(NUM_FUNCTIONS);
             for idx_threshold in 0..NUM_FUNCTIONS {
                 if val < threshold[idx_threshold] {
-                    coord = Point::apply_variation(
+                    let pre_proc = pre_proc(
                         coord.affine(coeffs_pre[idx_threshold]),
-                        &weights[idx_threshold],
-                        &vars,
-                    )
-                    .affine(coeffs_post[idx_threshold]);
+                        coeffs_pre[idx_threshold],
+                        params,
+                    );
+                    coord = Point::apply_variation(pre_proc, &weights[idx_threshold], &vars)
+                        .affine(coeffs_post[idx_threshold]);
                     col = colors[idx_threshold];
                     break;
                 }
@@ -162,11 +167,11 @@ impl Picture {
                 (js_sys::Math::log(self.cell_color[i].2 as f64) / log_max_counter) as f32;
             // Gamma correction
             self.cell_color[i].0 =
-                (js_sys::Math::pow(self.cell_color[i].0 as f64, 1.0 / 2.2)) as f32;
+                (js_sys::Math::pow(self.cell_color[i].0 as f64, 1.0 / GAMMA)) as f32;
             self.cell_color[i].1 =
-                (js_sys::Math::pow(self.cell_color[i].1 as f64, 1.0 / 2.2)) as f32;
+                (js_sys::Math::pow(self.cell_color[i].1 as f64, 1.0 / GAMMA)) as f32;
             self.cell_color[i].2 =
-                (js_sys::Math::pow(self.cell_color[i].2 as f64, 1.0 / 2.2)) as f32;
+                (js_sys::Math::pow(self.cell_color[i].2 as f64, 1.0 / GAMMA)) as f32;
         }
 
         // Auxiliary functions

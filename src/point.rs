@@ -1,3 +1,4 @@
+use super::variations::*;
 use std::ops::{Add, AddAssign, Mul};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -14,7 +15,8 @@ impl Point {
         Point(a * x + b * y + c, d * x + e * y + f)
     }
 
-    pub fn apply_variation(p: Point, weights: &Vec<f32>, vars: &Vec<fn(Point) -> Point>) -> Point {
+    // pub fn apply_variation(p: Point, weights: &Vec<f32>, vars: &Vec<fn(Point) -> Point>) -> Point {
+    pub fn apply_variation(p: PreProc, weights: &Vec<f32>, vars: &Vec<fn(PreProc) -> Point>) -> Point {
         let mut res = Point::new();
         for i in 0..vars.len() {
             res += weights[i] * vars[i](p);
