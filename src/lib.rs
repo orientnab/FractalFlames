@@ -7,13 +7,13 @@ use variations::*;
 
 use js_sys;
 use wasm_bindgen::prelude::*;
-use web_sys;
+// use web_sys;
 
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
+// macro_rules! log {
+//     ( $( $t:tt )* ) => {
+//         web_sys::console::log_1(&format!( $( $t )* ).into());
+//     }
+// }
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -23,7 +23,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 const PIC_WIDTH: u32 = 512;
 const PIC_HEIGHT: u32 = 512;
-const ITER: usize = 10_000_000;
+const ITER: usize = 100_000;
 const NUM_FUNCTIONS: usize = 6;
 const GAMMA: f64 = 2.2;
 
@@ -101,8 +101,8 @@ impl Picture {
         //     /* v18, */ v19, /*v20,*/ v21, v22, v23, v24, v25, v27, v28, v29, v39, v42,
         // ];
         let vars: Vec<fn(&PreProc) -> Point> = vec![
-            v1, v2, v3, v4, v5, v6, v8, v9, v10, v11, v12, v13, v14, v15, v16,
-            v19, v23, v24, v27, v28, v29, v39, v42,
+            v1, v2, v3, v4, v5, v6, v8, v9, v10, v11, v12, v13, v14, v15, v16, v19, v23, v24, v27,
+            v28, v29, v39, v42,
         ];
         let coeffs_pre = create_coeffs(NUM_FUNCTIONS);
         let coeffs_post = create_coeffs(NUM_FUNCTIONS);
@@ -113,24 +113,24 @@ impl Picture {
 
         let coeffs_pre_final = create_coeffs(1);
         let coeffs_post_final = create_coeffs(1);
-        log!(
-            "Pre: ({},{},{},{},{},{})",
-            coeffs_pre_final[0].0,
-            coeffs_pre_final[0].1,
-            coeffs_pre_final[0].2,
-            coeffs_pre_final[0].3,
-            coeffs_pre_final[0].4,
-            coeffs_pre_final[0].5,
-        );
-        log!(
-            "Post: ({},{},{},{},{},{})",
-            coeffs_post_final[0].0,
-            coeffs_post_final[0].1,
-            coeffs_post_final[0].2,
-            coeffs_post_final[0].3,
-            coeffs_post_final[0].4,
-            coeffs_post_final[0].5,
-        );
+        // log!(
+        //     "Pre: ({},{},{},{},{},{})",
+        //     coeffs_pre_final[0].0,
+        //     coeffs_pre_final[0].1,
+        //     coeffs_pre_final[0].2,
+        //     coeffs_pre_final[0].3,
+        //     coeffs_pre_final[0].4,
+        //     coeffs_pre_final[0].5,
+        // );
+        // log!(
+        //     "Post: ({},{},{},{},{},{})",
+        //     coeffs_post_final[0].0,
+        //     coeffs_post_final[0].1,
+        //     coeffs_post_final[0].2,
+        //     coeffs_post_final[0].3,
+        //     coeffs_post_final[0].4,
+        //     coeffs_post_final[0].5,
+        // );
         let params_final = Params::new(1);
         let weights_final = weigths(1, vars.len());
 
@@ -208,6 +208,110 @@ impl Picture {
                 (js_sys::Math::pow(self.cell_color[i].1 as f64, 1.0 / GAMMA)) as f32;
             self.cell_color[i].2 =
                 (js_sys::Math::pow(self.cell_color[i].2 as f64, 1.0 / GAMMA)) as f32;
+        }
+
+        // Diffusion
+        let mut diff_cell_color = self.cell_color.clone();
+        for cell in &mut diff_cell_color {
+            cell.0 *= -4.0;
+            cell.1 *= -4.0;
+            cell.2 *= -4.0;
+        }
+        for y in 0..self.height {
+            for x in 0..self.width - 1 {
+                diff_cell_color[self.get_index(x, y)].0 +=
+                    self.cell_color[self.get_index(x + 1, y)].0;
+                diff_cell_color[self.get_index(x, y)].1 +=
+                    self.cell_color[self.get_index(x + 1, y)].1;
+                diff_cell_color[self.get_index(x, y)].2 +=
+                    self.cell_color[self.get_index(x + 1, y)].2;
+            }
+        }
+        for y in 0..self.height {
+            for x in 1..self.width {
+                diff_cell_color[self.get_index(x, y)].0 +=
+                    self.cell_color[self.get_index(x - 1, y)].0;
+                diff_cell_color[self.get_index(x, y)].1 +=
+                    self.cell_color[self.get_index(x - 1, y)].1;
+                diff_cell_color[self.get_index(x, y)].2 +=
+                    self.cell_color[self.get_index(x - 1, y)].2;
+            }
+        }
+        for y in 0..self.height - 1 {
+            for x in 0..self.width {
+                diff_cell_color[self.get_index(x, y)].0 +=
+                    self.cell_color[self.get_index(x, y + 1)].0;
+                diff_cell_color[self.get_index(x, y)].1 +=
+                    self.cell_color[self.get_index(x, y + 1)].1;
+                diff_cell_color[self.get_index(x, y)].2 +=
+                    self.cell_color[self.get_index(x, y + 1)].2;
+            }
+        }
+        for y in 1..self.height {
+            for x in 0..self.width {
+                diff_cell_color[self.get_index(x, y)].0 +=
+                    self.cell_color[self.get_index(x, y - 1)].0;
+                diff_cell_color[self.get_index(x, y)].1 +=
+                    self.cell_color[self.get_index(x, y - 1)].1;
+                diff_cell_color[self.get_index(x, y)].2 +=
+                    self.cell_color[self.get_index(x, y - 1)].2;
+            }
+        }
+        for index in 0..(self.width * self.height) as usize {
+            self.cell_color[index].0 += 0.0_f32.max(diff_cell_color[index].0 / 4.0);
+            self.cell_color[index].1 += 0.0_f32.max(diff_cell_color[index].1 / 4.0);
+            self.cell_color[index].2 += 0.0_f32.max(diff_cell_color[index].2 / 4.0);
+        }
+        diff_cell_color = self.cell_color.clone();
+        for cell in &mut diff_cell_color {
+            cell.0 *= -4.0;
+            cell.1 *= -4.0;
+            cell.2 *= -4.0;
+        }
+        for y in 0..self.height {
+            for x in 0..self.width - 1 {
+                diff_cell_color[self.get_index(x, y)].0 +=
+                    self.cell_color[self.get_index(x + 1, y)].0;
+                diff_cell_color[self.get_index(x, y)].1 +=
+                    self.cell_color[self.get_index(x + 1, y)].1;
+                diff_cell_color[self.get_index(x, y)].2 +=
+                    self.cell_color[self.get_index(x + 1, y)].2;
+            }
+        }
+        for y in 0..self.height {
+            for x in 1..self.width {
+                diff_cell_color[self.get_index(x, y)].0 +=
+                    self.cell_color[self.get_index(x - 1, y)].0;
+                diff_cell_color[self.get_index(x, y)].1 +=
+                    self.cell_color[self.get_index(x - 1, y)].1;
+                diff_cell_color[self.get_index(x, y)].2 +=
+                    self.cell_color[self.get_index(x - 1, y)].2;
+            }
+        }
+        for y in 0..self.height - 1 {
+            for x in 0..self.width {
+                diff_cell_color[self.get_index(x, y)].0 +=
+                    self.cell_color[self.get_index(x, y + 1)].0;
+                diff_cell_color[self.get_index(x, y)].1 +=
+                    self.cell_color[self.get_index(x, y + 1)].1;
+                diff_cell_color[self.get_index(x, y)].2 +=
+                    self.cell_color[self.get_index(x, y + 1)].2;
+            }
+        }
+        for y in 1..self.height {
+            for x in 0..self.width {
+                diff_cell_color[self.get_index(x, y)].0 +=
+                    self.cell_color[self.get_index(x, y - 1)].0;
+                diff_cell_color[self.get_index(x, y)].1 +=
+                    self.cell_color[self.get_index(x, y - 1)].1;
+                diff_cell_color[self.get_index(x, y)].2 +=
+                    self.cell_color[self.get_index(x, y - 1)].2;
+            }
+        }
+        for index in 0..(self.width * self.height) as usize {
+            self.cell_color[index].0 += 0.0_f32.max(diff_cell_color[index].0 / 4.0);
+            self.cell_color[index].1 += 0.0_f32.max(diff_cell_color[index].1 / 4.0);
+            self.cell_color[index].2 += 0.0_f32.max(diff_cell_color[index].2 / 4.0);
         }
 
         // Auxiliary functions
