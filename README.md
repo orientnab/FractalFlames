@@ -31,3 +31,8 @@ In the source code, you can set
 - the number of functions.
 
 You can also manually pic the variation that will be used to compose the functions.
+
+## TODO
+- Completely remove js_sys and use instead no-std rand crate
+- Implement multi-threading
+- Choose a better way to pick weights for (even) cooler pictures
