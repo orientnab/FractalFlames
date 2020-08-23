@@ -1,6 +1,7 @@
 use super::variations::*;
 use std::ops::{Add, AddAssign, Mul};
 
+/// Representation of a Point
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Point(pub f32, pub f32);
 
@@ -9,13 +10,14 @@ impl Point {
         Point(0.0, 0.0)
     }
 
+    /// Applies affine transformation on a point
     pub fn affine(&self, coeffs: (f32, f32, f32, f32, f32, f32)) -> Point {
         let Point(x, y) = self;
         let (a, b, c, d, e, f) = coeffs;
         Point(a * x + b * y + c, d * x + e * y + f)
     }
 
-    // pub fn apply_variation(p: Point, weights: &Vec<f32>, vars: &Vec<fn(Point) -> Point>) -> Point {
+    /// Applies a function on a point given the weights and variations that define such function
     pub fn apply_variation(p: &PreProc, weights: &Vec<f32>, vars: &Vec<fn(&PreProc) -> Point>) -> Point {
         let mut res = Point::new();
         for i in 0..vars.len() {
@@ -24,6 +26,8 @@ impl Point {
         return res;
     }
 }
+
+// Addition and multiplication by scalar to simplify notation
 
 impl Add for Point {
     type Output = Point;
