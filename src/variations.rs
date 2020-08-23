@@ -1,6 +1,6 @@
 //! This module defines the variations that can be applied to a Point
 //!
-//! All these function have been taken from Draves (1993)
+//! All these function have been taken from Draves (2003)
 
 use super::point::*;
 

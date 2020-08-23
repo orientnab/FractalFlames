@@ -1,4 +1,4 @@
-//! A library for creating abstract flames inspired by the paper by Draves (1993)
+//! A library for creating abstract flames inspired by the paper by Draves (2003)
 
 mod point;
 mod utils;
@@ -156,7 +156,7 @@ impl Picture {
                 }
             }
         }
-        // Closelly following the algorithm in Draves (1993)
+        // Closelly following the algorithm in Draves (2003)
         //
         // 1. Pics a random function. Each function has a probability threshold
         // 2. Applies an affine transformation
