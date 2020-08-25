@@ -32,6 +32,13 @@ In the source code, you can set
 
 You can also manually pic the variation that will be used to compose the functions.
 
+## Examples
+![First Example](fractal_flame_example_1.png)
+
+![Second Example](fractal_flame_example_2.png)
+
+![Third Example](fractal_flame_example_3.png)
+
 ## TODO
 - Completely remove js_sys and use instead no-std rand crate
 - Implement multi-threading
